@@ -127,24 +127,14 @@ def main():
         print(transcription)
         with st.expander("Transcription Preview"):
             st.write(transcription)
-            
-        # text_input = st.text_area("Enter a prompt about the data (e.g., 'summarize key statistics', 'find trends'):")
-        # if st.button("Generate"):
-        #     if text_input:
-        #         with st.spinner("Generating response..."):
-        #             template = f"""
-        #                 Analyze the data in the uploaded CSV file based on the prompt: {text_input}
-        #                 The dataset: {data}
-        #             """
-        #             formatted_template = template.format(text_input=text_input)
-        #             #st.write(formatted_template)
-        #     else:
-        #         st.warning("Please enter a prompt")
-
-        #     response = model.generate_content(formatted_template)
-        #     analysis = response.text
-        #     st.write("Analysis:")
-        #     st.write(analysis)
-
+    text_input =  st.text_area("Is there any other information that you want to ask?")
+    if st.button("Analysis"):
+        template = text_input+prompt_parts[0]+transcription+prompt_parts[1]
+        formatted_template = template.format(text_input=text_input)
+        response = model.generate_content(formatted_template)
+        analysis = response.text
+        st.write("Analysis and Evaluate:")
+        st.write(analysis)
+        
 if __name__ == "__main__":
     main()
