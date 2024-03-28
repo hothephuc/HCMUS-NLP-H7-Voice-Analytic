@@ -51,7 +51,7 @@ def transcribe(audio, lang='vn'):
     result = en_pipe(audio, generate_kwargs={"language": lang}) if lang != 'vn' else vn_pipe(audio)
     return result['text']
 
-print("Trancripting ...")
-transcription = transcribe('sample/VN_Sample1.wav', 'vn')
+# print("Trancripting ...")
+# transcription = transcribe('sample/VN_Sample1.wav', 'vn')
 
-print(transcription)
+# print(transcription)

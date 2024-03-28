@@ -1,6 +1,63 @@
 import streamlit as st
 import google.generativeai as genai
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+
+
+@st.cache_resource
+def load_models():
+  print("Loading VN Whisper ...")
+
+  VN_model_id = "vinai/PhoWhisper-small"
+
+  VN_model = AutoModelForSpeechSeq2Seq.from_pretrained(
+      VN_model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True
+  )
+  VN_model.to(device)
+
+  VN_processor = AutoProcessor.from_pretrained(VN_model_id)
+
+  vn_pipe = pipeline(
+      "automatic-speech-recognition",
+      model=VN_model,
+      tokenizer=VN_processor.tokenizer,
+      feature_extractor=VN_processor.feature_extractor,
+      torch_dtype=torch_dtype,
+      device=device,
+  )
+
+  print("Loading OpenAI Whisper ...")
+
+  EN_model_id = "openai/whisper-small"
+
+  EN_model = AutoModelForSpeechSeq2Seq.from_pretrained(
+      EN_model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True
+  )
+  EN_model.to(device)
+
+  EN_processor = AutoProcessor.from_pretrained(EN_model_id)
+
+  en_pipe = pipeline(
+      "automatic-speech-recognition",
+      model=EN_model,
+      tokenizer=EN_processor.tokenizer,
+      feature_extractor=EN_processor.feature_extractor,
+      max_new_tokens=128,
+      chunk_length_s=30,
+      batch_size=16,
+      torch_dtype=torch_dtype,
+      device=device,
+  )
+
+  return vn_pipe, en_pipe
+
+def transcribe(audio, lang):
+    vn_pipe, en_pipe = load_models()
+    result = en_pipe(audio, generate_kwargs={"language": lang}) if lang != 'vietnamese' else vn_pipe(audio)
+    return result['text']
 
 genai.configure(api_key="AIzaSyDlhZuEB3Pawz6YMJERLfz-phMuWFKD0Xg")
 
@@ -40,7 +97,6 @@ prompt_parts = [
   "output: Customer Analysis\n\nOverall Satisfaction Score: Rate the customer's satisfaction level on a scale of 1-5 (1 = Very Dissatisfied, 5 = Very Satisfied).\nReasons for Satisfaction: Identify specific statements or actions in the transcript that indicate the customer's satisfaction.\nReasons for Dissatisfaction: Identify specific statements or actions in the transcript that indicate the customer's dissatisfaction.\n\nPain Points Analysis\n\nProblem Areas: Describe the specific issues or challenges mentioned by the customer.\nImpact of Pain Points: Assess the severity and impact of the pain points on the customer's experience.\nPossible Solutions: Suggest potential solutions or actions that could address the identified pain points.\n\nEmployee Analysis\n\nCommunication Skills: Evaluate the employee's ability to communicate effectively and clearly.\nEmpathy and Understanding: Assess the employee's ability to understand and empathize with the customer's needs.\nProblem-Solving Skills: Determine the employee's ability to identify and resolve customer issues efficiently.\nProfessionalism and Courtesy: Evaluate the employee's overall demeanor and professionalism during the interaction.\n\nAdditional Notes\n\nOther Analysis: Include any additional insights or observations that may be relevant to the analysis.\nClassification: Categorize the interaction based on relevant factors (e.g., product inquiry, billing issue, support request).\nAction Items: List specific actions or recommendations that should be taken to improve customer satisfaction, address pain points, or enhance employee performance.\n\nEmployee Performance Rating:\n\nOverall Performance Score: Rate the employee's overall performance on a scale of 1-5 (1 = Needs Improvement, 5 = Excellent).\nStrengths: Identify specific areas where the employee excelled.\nAreas for Improvement: Provide constructive feedback on areas where the employee could improve their performance.",
 ]
 
-prompt_parts[0]= 
 response = model.generate_content(prompt_parts)
 print(response.text)
 
@@ -57,30 +113,38 @@ def main():
         unsafe_allow_html=True
     )
 
-    uploaded_file = st.file_uploader("Upload a csv file", type=['csv'])
+    uploaded_file = st.file_uploader("Upload an audio file(MP3, WAV)", type=['mp3', 'wav'], accept_multiple_files=False)
+
+    lang_option = st.selectbox(
+    'Conversation language?',
+    ('vietnamese', 'english'))
+
+    st.write('You selected:', lang_option)
 
     if uploaded_file != None:
-        data = pd.read_csv(uploaded_file)
-        with st.expander("Dataframe Preview"):
-            st.write(data.head(5))
+        audio_bytes = uploaded_file.read()
+        transcription = transcribe(audio_bytes, lang_option)
+        print(transcription)
+        with st.expander("Transcription Preview"):
+            st.write(transcription)
             
-        text_input = st.text_area("Enter a prompt about the data (e.g., 'summarize key statistics', 'find trends'):")
-        if st.button("Generate"):
-            if text_input:
-                with st.spinner("Generating response..."):
-                    template = f"""
-                        Analyze the data in the uploaded CSV file based on the prompt: {text_input}
-                        The dataset: {data}
-                    """
-                    formatted_template = template.format(text_input=text_input)
-                    #st.write(formatted_template)
-            else:
-                st.warning("Please enter a prompt")
+        # text_input = st.text_area("Enter a prompt about the data (e.g., 'summarize key statistics', 'find trends'):")
+        # if st.button("Generate"):
+        #     if text_input:
+        #         with st.spinner("Generating response..."):
+        #             template = f"""
+        #                 Analyze the data in the uploaded CSV file based on the prompt: {text_input}
+        #                 The dataset: {data}
+        #             """
+        #             formatted_template = template.format(text_input=text_input)
+        #             #st.write(formatted_template)
+        #     else:
+        #         st.warning("Please enter a prompt")
 
-            response = model.generate_content(formatted_template)
-            analysis = response.text
-            st.write("Analysis:")
-            st.write(analysis)
+        #     response = model.generate_content(formatted_template)
+        #     analysis = response.text
+        #     st.write("Analysis:")
+        #     st.write(analysis)
 
 if __name__ == "__main__":
     main()
