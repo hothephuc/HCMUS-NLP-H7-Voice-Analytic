@@ -110,8 +110,21 @@ def main():
             <p>Sentimental analysis to better understand customer. Deliver a rating for both customer's opinion and the servicer's performance </p>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
+        
     )
+    st.markdown(
+    """
+    <style>
+    body {
+        background-image: url("https://images.unsplash.com/photo-1542281286-9e0a16bb7366");
+        background-size: cover;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+    )
+
 
     uploaded_file = st.file_uploader("Upload an audio file(MP3, WAV)", type=['mp3', 'wav'], accept_multiple_files=False)
 
@@ -135,6 +148,6 @@ def main():
         analysis = response.text
         st.write("Analysis and Evaluate:")
         st.write(analysis)
-        
+
 if __name__ == "__main__":
     main()
