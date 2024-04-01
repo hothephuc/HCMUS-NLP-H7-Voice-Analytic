@@ -97,8 +97,8 @@ prompt_parts = [
   "output: Customer Analysis\n\nOverall Satisfaction Score: Rate the customer's satisfaction level on a scale of 1-5 (1 = Very Dissatisfied, 5 = Very Satisfied).\nReasons for Satisfaction: Identify specific statements or actions in the transcript that indicate the customer's satisfaction.\nReasons for Dissatisfaction: Identify specific statements or actions in the transcript that indicate the customer's dissatisfaction.\n\nPain Points Analysis\n\nProblem Areas: Describe the specific issues or challenges mentioned by the customer.\nImpact of Pain Points: Assess the severity and impact of the pain points on the customer's experience.\nPossible Solutions: Suggest potential solutions or actions that could address the identified pain points.\n\nEmployee Analysis\n\nCommunication Skills: Evaluate the employee's ability to communicate effectively and clearly.\nEmpathy and Understanding: Assess the employee's ability to understand and empathize with the customer's needs.\nProblem-Solving Skills: Determine the employee's ability to identify and resolve customer issues efficiently.\nProfessionalism and Courtesy: Evaluate the employee's overall demeanor and professionalism during the interaction.\n\nAdditional Notes\n\nOther Analysis: Include any additional insights or observations that may be relevant to the analysis.\nClassification: Categorize the interaction based on relevant factors (e.g., product inquiry, billing issue, support request).\nAction Items: List specific actions or recommendations that should be taken to improve customer satisfaction, address pain points, or enhance employee performance.\n\nEmployee Performance Rating:\n\nOverall Performance Score: Rate the employee's overall performance on a scale of 1-5 (1 = Needs Improvement, 5 = Excellent).\nStrengths: Identify specific areas where the employee excelled.\nAreas for Improvement: Provide constructive feedback on areas where the employee could improve their performance.",
 ]
 
-response = model.generate_content(prompt_parts)
-print(response.text)
+# response = model.generate_content(prompt_parts)
+# print(response.text)
 
 def main():
     st.set_page_config(page_title="Customer's experience analysis", page_icon=":chart_with_upwards_trend:")
@@ -121,14 +121,14 @@ def main():
 
     st.write('You selected:', lang_option)
 
-    if uploaded_file != None:
+    text_input =  st.text_area("Is there any other information that you want to ask?")
+    if st.button("Analysis") and uploaded_file != None:
+
         audio_bytes = uploaded_file.read()
         transcription = transcribe(audio_bytes, lang_option)
-        print(transcription)
         with st.expander("Transcription Preview"):
             st.write(transcription)
-    text_input =  st.text_area("Is there any other information that you want to ask?")
-    if st.button("Analysis"):
+
         template = text_input+prompt_parts[0]+transcription+prompt_parts[1]
         formatted_template = template.format(text_input=text_input)
         response = model.generate_content(formatted_template)
